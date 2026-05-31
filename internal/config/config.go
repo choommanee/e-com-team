@@ -67,8 +67,8 @@ func Load() Config {
 		OpenAIImage:  env("OPENAI_IMAGE_MODEL", "gpt-image-1"),
 
 		GeminiAPIKey: os.Getenv("GEMINI_API_KEY"),
-		GeminiModel:  env("GEMINI_MODEL", "gemini-2.0-flash"),
-		GeminiImage:  env("GEMINI_IMAGE_MODEL", "gemini-2.0-flash-preview-image-generation"),
+		GeminiModel:  env("GEMINI_MODEL", "gemini-2.5-flash"),
+		GeminiImage:  env("GEMINI_IMAGE_MODEL", "gemini-2.5-flash-image"),
 
 		DatabaseURL: env("DATABASE_URL", ""),
 
