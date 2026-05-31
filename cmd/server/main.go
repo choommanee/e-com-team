@@ -3,6 +3,9 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
 	"log"
 	"net/http"
 	"os/signal"
@@ -14,6 +17,7 @@ import (
 	"ecomteam/internal/auth"
 	"ecomteam/internal/billing"
 	"ecomteam/internal/config"
+	"ecomteam/internal/domain"
 	"ecomteam/internal/events"
 	"ecomteam/internal/jobs"
 	"ecomteam/internal/llm"
@@ -34,6 +38,9 @@ func main() {
 	// --- Store ---
 	st := buildStore(rootCtx, cfg)
 	defer st.Close()
+
+	// --- Seed demo login ---
+	seedUser(rootCtx, cfg, st)
 
 	// --- LLM ---
 	var client llm.Client
@@ -118,4 +125,43 @@ func buildStore(ctx context.Context, cfg config.Config) store.Store {
 	}
 	log.Println("Store: Postgres")
 	return pg
+}
+
+// seedUser creates the configured demo login on startup (idempotent) so there
+// is always an account ready to sign in with.
+func seedUser(ctx context.Context, cfg config.Config, st store.Store) {
+	if cfg.SeedEmail == "" {
+		return
+	}
+	if _, err := st.GetUserByEmail(ctx, cfg.SeedEmail); err == nil {
+		log.Printf("Seed user already exists: %s", cfg.SeedEmail)
+		return
+	} else if !errors.Is(err, store.ErrNotFound) {
+		log.Printf("Seed user check failed: %v", err)
+		return
+	}
+
+	hash, err := auth.HashPassword(cfg.SeedPassword)
+	if err != nil {
+		log.Printf("Seed user: hash failed: %v", err)
+		return
+	}
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	u := domain.User{ID: hex.EncodeToString(b), Email: cfg.SeedEmail, PasswordHash: hash, CreatedAt: time.Now()}
+	if err := st.CreateUser(ctx, u); err != nil {
+		log.Printf("Seed user: create failed: %v", err)
+		return
+	}
+	plan := domain.PlanID(cfg.SeedPlan)
+	switch plan {
+	case domain.PlanFree, domain.PlanPro, domain.PlanBusiness:
+	default:
+		plan = domain.PlanFree
+	}
+	_ = st.UpsertSubscription(ctx, domain.Subscription{
+		UserID: u.ID, Plan: plan, Status: "active",
+		PeriodStart: time.Now(), PeriodEnd: time.Now().AddDate(0, 1, 0),
+	})
+	log.Printf("✅ Seeded demo login → email: %s  password: %s  (plan: %s)", cfg.SeedEmail, cfg.SeedPassword, plan)
 }

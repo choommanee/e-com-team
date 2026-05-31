@@ -29,8 +29,18 @@ dashboard over SSE — so the agent cards animate exactly like the reference UI.
 ```bash
 make run
 # open http://localhost:8080            (landing)
-# open http://localhost:8080/dashboard  (app — register an account and create a listing)
+# open http://localhost:8080/dashboard  (app)
 ```
+
+A **ready-to-use demo login** is created automatically in mock mode:
+
+```
+email:    demo@ecom.dev
+password: demo1234        (Pro plan, 100 listings/month)
+```
+
+Set `SEED_EMAIL` / `SEED_PASSWORD` / `SEED_PLAN` to customize it, or `SEED_EMAIL=off`
+to disable. You can also just register a fresh account from the dashboard.
 
 In mock mode the agents return canned Thai copy and STUDIO renders a placeholder image,
 so you can exercise the entire flow — auth, generation, live progress, quotas, mock

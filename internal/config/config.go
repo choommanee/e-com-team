@@ -20,6 +20,13 @@ type Config struct {
 
 	JWTSecret string
 
+	// Seed user created on startup so there is always a ready-to-use login.
+	// In mock mode this defaults to a demo account; override via SEED_EMAIL/
+	// SEED_PASSWORD, or set SEED_EMAIL=off to disable.
+	SeedEmail    string
+	SeedPassword string
+	SeedPlan     string // free | pro | business
+
 	OpenAIAPIKey string
 	OpenAIModel  string // chat model, e.g. "gpt-4o-mini"
 	OpenAIImage  string // image model, e.g. "gpt-image-1"
@@ -57,6 +64,23 @@ func Load() Config {
 		LemonSqueezyWebhookSecret: os.Getenv("LEMONSQUEEZY_WEBHOOK_SECRET"),
 		LSVariantPro:              os.Getenv("LS_VARIANT_PRO"),
 		LSVariantBusiness:         os.Getenv("LS_VARIANT_BUSINESS"),
+
+		SeedEmail:    os.Getenv("SEED_EMAIL"),
+		SeedPassword: os.Getenv("SEED_PASSWORD"),
+		SeedPlan:     env("SEED_PLAN", "pro"),
+	}
+
+	// In mock mode, provide a ready-to-use demo login by default so you can sign
+	// in immediately without registering. Set SEED_EMAIL=off to disable.
+	if c.SeedEmail == "" && c.AIMode == "mock" {
+		c.SeedEmail = "demo@ecom.dev"
+		c.SeedPassword = "demo1234"
+	}
+	if c.SeedEmail == "off" {
+		c.SeedEmail = ""
+	}
+	if c.SeedPassword == "" {
+		c.SeedPassword = "demo1234"
 	}
 	return c
 }
