@@ -1,0 +1,60 @@
+package llm
+
+import (
+	"bytes"
+	"context"
+	"image"
+	"image/color"
+	"image/png"
+	"strings"
+)
+
+// Mock is a deterministic Client used when AI_MODE=mock. It inspects an agent
+// tag embedded in the system prompt (see agents package) and returns canned,
+// valid JSON, plus a generated placeholder PNG for images.
+type Mock struct{}
+
+// NewMock returns a deterministic mock client.
+func NewMock() *Mock { return &Mock{} }
+
+// Chat returns canned JSON appropriate to the calling agent.
+func (m *Mock) Chat(_ context.Context, system, user string) (string, error) {
+	switch {
+	case strings.Contains(system, "agent:benefit"):
+		return `{"selling_points":["ใช้งานได้จริง คุ้มราคา","วัสดุคุณภาพดี ทนทาน","ส่งไว มีรับประกัน"]}`, nil
+	case strings.Contains(system, "agent:promo"):
+		return `{"headline":"ของดีต้องมีติดบ้าน!","promotion":"ซื้อ 1 แถม 1 ส่งฟรีทั่วประเทศ"}`, nil
+	case strings.Contains(system, "agent:design"):
+		return `{"layout":"สินค้าอยู่กลางภาพ ข้อความพาดหัวด้านบน ป้ายโปรฯ มุมขวาล่าง","color_tone":"ส้ม-ขาว สดใส สไตล์ Shopee"}`, nil
+	case strings.Contains(system, "agent:prompt"):
+		return `{"image_prompt":"A professional e-commerce product listing image. Bright orange and white studio background. Bold Thai headline text at the top. A red promo badge in the lower-right corner. Clean commercial product photography, high quality, sharp lighting."}`, nil
+	case strings.Contains(system, "agent:qc"):
+		return `{"qc_status":"passed","qc_notes":"ข้อความอ่านง่าย ราคาและโปรโมชันสอดคล้องกัน รูปครบถ้วน"}`, nil
+	default:
+		return `{}`, nil
+	}
+}
+
+// Image returns a generated placeholder PNG (no external service needed).
+func (m *Mock) Image(_ context.Context, prompt string) ([]byte, error) {
+	const w, h = 512, 512
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	// Diagonal two-tone "Shopee" orange/white blocks so the placeholder is
+	// visually distinct and deterministic.
+	orange := color.RGBA{R: 0xEE, G: 0x4D, B: 0x2D, A: 0xFF}
+	cream := color.RGBA{R: 0xFF, G: 0xF3, B: 0xE6, A: 0xFF}
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			if ((x/32)+(y/32))%2 == 0 {
+				img.Set(x, y, orange)
+			} else {
+				img.Set(x, y, cream)
+			}
+		}
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
