@@ -45,6 +45,12 @@ type Config struct {
 	LemonSqueezyWebhookSecret string
 	LSVariantPro              string
 	LSVariantBusiness         string
+
+	// Shopee Affiliate Open API: "mock" or "real".
+	ShopeeAffMode   string
+	ShopeeAffAppID  string
+	ShopeeAffSecret string
+	ShopeeAffRegion string // th, vn, id, ... (selects open-api host)
 }
 
 // Load reads configuration from the environment, applying sensible defaults.
@@ -77,6 +83,11 @@ func Load() Config {
 		LemonSqueezyWebhookSecret: os.Getenv("LEMONSQUEEZY_WEBHOOK_SECRET"),
 		LSVariantPro:              os.Getenv("LS_VARIANT_PRO"),
 		LSVariantBusiness:         os.Getenv("LS_VARIANT_BUSINESS"),
+
+		ShopeeAffMode:   env("SHOPEE_AFF_MODE", "mock"),
+		ShopeeAffAppID:  os.Getenv("SHOPEE_AFF_APP_ID"),
+		ShopeeAffSecret: os.Getenv("SHOPEE_AFF_SECRET"),
+		ShopeeAffRegion: env("SHOPEE_AFF_REGION", "th"),
 
 		SeedEmail:    os.Getenv("SEED_EMAIL"),
 		SeedPassword: os.Getenv("SEED_PASSWORD"),
@@ -116,6 +127,9 @@ func (c Config) Validate() error {
 		if c.LemonSqueezyAPIKey == "" || c.LemonSqueezyWebhookSecret == "" {
 			return fmt.Errorf("BILLING_MODE=real requires LEMONSQUEEZY_API_KEY and LEMONSQUEEZY_WEBHOOK_SECRET")
 		}
+	}
+	if c.ShopeeAffMode == "real" && (c.ShopeeAffAppID == "" || c.ShopeeAffSecret == "") {
+		return fmt.Errorf("SHOPEE_AFF_MODE=real requires SHOPEE_AFF_APP_ID and SHOPEE_AFF_SECRET")
 	}
 	if c.JWTSecret == "" {
 		return fmt.Errorf("JWT_SECRET is required")
