@@ -13,6 +13,7 @@ import (
 type authRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Ref      string `json:"ref"` // optional affiliate referral code
 }
 
 type authResponse struct {
@@ -51,6 +52,9 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		UserID: u.ID, Plan: domain.PlanFree, Status: "active",
 		PeriodStart: s.now(), PeriodEnd: s.now().AddDate(0, 1, 0),
 	})
+
+	// Attribute the signup to a referring affiliate (body wins, then cookie).
+	s.attributeReferral(r, u.ID, req.Ref)
 
 	s.issueToken(w, u)
 }

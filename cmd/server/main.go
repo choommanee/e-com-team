@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"ecomteam/internal/affiliate"
 	"ecomteam/internal/agents"
 	"ecomteam/internal/api"
 	"ecomteam/internal/auth"
@@ -87,6 +88,7 @@ func main() {
 		Quota:     quota,
 		Catalog:   catalog,
 		Billing:   biller,
+		Affiliate: affiliate.New(client),
 		Templates: tpl,
 	})
 

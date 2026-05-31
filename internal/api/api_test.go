@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"ecomteam/internal/affiliate"
 	"ecomteam/internal/agents"
 	"ecomteam/internal/auth"
 	"ecomteam/internal/billing"
@@ -40,6 +41,7 @@ func newTestServer(t *testing.T) (*httptest.Server, context.CancelFunc) {
 	srv := New(Deps{
 		Config: cfg, Store: st, Tokens: auth.NewTokenManager("test-secret", time.Hour),
 		Bus: bus, Pool: pool, Quota: q, Catalog: cat, Billing: billing.NewMock(cfg.PublicBaseURL),
+		Affiliate: affiliate.New(llm.NewMock()),
 		Templates: nil,
 	})
 	ts := httptest.NewServer(srv.Handler(http.NotFoundHandler()))

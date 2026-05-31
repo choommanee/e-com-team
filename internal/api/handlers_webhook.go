@@ -61,6 +61,10 @@ func (s *Server) applySubscription(r *http.Request, uid string, plan domain.Plan
 		PeriodStart:    s.now(),
 		PeriodEnd:      s.now().AddDate(0, 1, 0),
 	})
+	// Pay affiliate commission on the first paid upgrade.
+	if status == "active" {
+		s.creditReferral(r, uid, plan)
+	}
 }
 
 // handleMockActivate lets the mock billing flow upgrade a plan without a real
@@ -80,5 +84,6 @@ func (s *Server) handleMockActivate(w http.ResponseWriter, r *http.Request) {
 		UserID: uid, Plan: plan, Status: "active",
 		LSSubscription: "mock-" + uid, PeriodStart: s.now(), PeriodEnd: s.now().AddDate(0, 1, 0),
 	})
+	s.creditReferral(r, uid, plan)
 	http.Redirect(w, r, "/dashboard?upgraded="+string(plan), http.StatusSeeOther)
 }

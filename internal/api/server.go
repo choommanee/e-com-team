@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"ecomteam/internal/affiliate"
 	"ecomteam/internal/auth"
 	"ecomteam/internal/billing"
 	"ecomteam/internal/config"
@@ -26,6 +27,7 @@ type Server struct {
 	quota     *subscription.Quota
 	catalog   *subscription.Catalog
 	billing   billing.Provider
+	affiliate *affiliate.AI
 	templates *template.Template
 	now       func() time.Time
 }
@@ -40,6 +42,7 @@ type Deps struct {
 	Quota     *subscription.Quota
 	Catalog   *subscription.Catalog
 	Billing   billing.Provider
+	Affiliate *affiliate.AI
 	Templates *template.Template
 }
 
@@ -54,6 +57,7 @@ func New(d Deps) *Server {
 		quota:     d.Quota,
 		catalog:   d.Catalog,
 		billing:   d.Billing,
+		affiliate: d.Affiliate,
 		templates: d.Templates,
 		now:       time.Now,
 	}
@@ -78,6 +82,13 @@ func (s *Server) Handler(staticFS http.Handler) http.Handler {
 	// --- Dashboard + realtime ---
 	mux.Handle("GET /api/v1/dashboard", s.requireAuth(s.handleDashboard))
 	mux.Handle("GET /api/v1/events", s.requireAuth(s.handleEvents))
+
+	// --- Affiliate ---
+	mux.Handle("POST /api/v1/affiliate/apply", s.requireAuth(s.handleAffiliateApply))
+	mux.Handle("GET /api/v1/affiliate", s.requireAuth(s.handleAffiliateGet))
+	mux.Handle("POST /api/v1/affiliate/content", s.requireAuth(s.handleAffiliateContent))
+	mux.Handle("GET /api/v1/affiliate/recommendations", s.requireAuth(s.handleAffiliateRecommend))
+	mux.HandleFunc("GET /r/{code}", s.handleReferralLanding)
 
 	// --- Billing ---
 	mux.Handle("POST /api/v1/billing/checkout", s.requireAuth(s.handleCheckout))
