@@ -47,8 +47,13 @@ func main() {
 	// --- LLM ---
 	var client llm.Client
 	if cfg.AIMode == "real" {
-		client = llm.NewOpenAI(cfg.OpenAIAPIKey, cfg.OpenAIModel, cfg.OpenAIImage)
-		log.Println("AI: OpenAI (real)")
+		// Real text + image, with a placeholder-image fallback so a missing
+		// gpt-image-1 entitlement (org verification) doesn't break the pipeline.
+		client = llm.WithImageFallback(
+			llm.NewOpenAI(cfg.OpenAIAPIKey, cfg.OpenAIModel, cfg.OpenAIImage),
+			llm.NewMock(),
+		)
+		log.Println("AI: OpenAI (real text + image, placeholder fallback on image error)")
 	} else {
 		client = llm.NewMock()
 		log.Println("AI: mock")
