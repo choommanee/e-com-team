@@ -14,7 +14,7 @@ Five AI agents run as a pipeline, powered by OpenAI. The service is offered as a
 
 Target user: Thai online sellers who lack good product photography.
 
-## 2. The 5-agent pipeline
+## 2. The 6-agent pipeline
 
 Sequential, each stage consumes the previous stage's typed output:
 
@@ -25,12 +25,15 @@ Sequential, each stage consumes the previous stage's typed output:
 | **DESIGN** | Graphic designer | Layout + color tone direction |
 | **PROMPT** | Prompt engineer | Detailed English image prompt incl. exact on-image text |
 | **STUDIO** | Image generator | Final image via `gpt-image-1`, saved to disk |
+| **QUALITY CHECK** | QA reviewer | Validates the listing (text legible, price/promo consistent, image present); marks `passed`/`needs_fix` |
 
-Agents 1–4 call OpenAI **chat completions** (text). Agent 5 calls OpenAI **image generation**
+Agents 1–4 + QC call OpenAI **chat completions** (text). STUDIO calls OpenAI **image generation**
 (`gpt-image-1`). All LLM access goes behind an `llm.Client` interface so it can be mocked in tests.
 
 The **Orchestrator** wires the stages with per-step timeout + bounded retry, logs each stage,
-and produces a single `Listing` result struct.
+emits a **progress event** per stage (used by the live dashboard), and produces a single
+`Listing` result struct. Each stage reports `0→100%` so the UI agent cards can animate like
+the reference dashboard.
 
 ## 3. Output conventions
 
@@ -47,18 +50,21 @@ Tech stack:
 - **PostgreSQL**: users, subscriptions, jobs, usage
 - **LemonSqueezy**: subscription billing (merchant of record), behind a `billing.Provider` interface
 - **Auth**: JWT (sessions) + bcrypt password hashing
-- **Frontend**: polished, modern server-rendered HTML — Tailwind (via CDN, no build step) +
-  a little Alpine.js/htmx for interactivity. A marketing **landing page** and an authenticated
-  **dashboard** (create listing, watch job progress, gallery of results, account/billing).
-- **Brand visuals**: logo, landing hero image, feature illustrations, and sample product-listing
-  mockups are **AI-generated** (image-generation skills) and shipped as static assets under
+- **Frontend**: a **pixel-art retro-game dashboard** matching the "E-COMMERCE HUB v2.0"
+  reference — dark navy background, neon cyan/green/orange accents, circuit-board borders,
+  pixel fonts (`Press Start 2P` for headings, `VT323` for body), animated progress bars and a
+  live clock. Server-rendered HTML + hand-written pixel CSS (no Tailwind), a little vanilla JS +
+  **SSE** for live updates, and `Chart.js` for the sales line chart. See §6a for the layout.
+- **Brand visuals**: pixel-art agent sprites (the 6 agents at their desks), pixel product
+  thumbnails, the "E-COMMERCE HUB" logo, and circuit-board background tiles are **AI-generated**
+  (image-generation skills, pixel-art style) and shipped as static assets under
   `internal/web/static/`.
 
 Project layout:
 ```
 cmd/server/main.go          # entrypoint, wiring, graceful shutdown
 internal/
-  agents/                   # benefit.go promo.go design.go prompt.go studio.go orchestrator.go
+  agents/                   # benefit.go promo.go design.go prompt.go studio.go qualitycheck.go orchestrator.go
   llm/                      # llm.Client interface + openai.go + mock.go
   api/                      # router.go handlers_*.go middleware.go
   auth/                     # jwt.go password.go
@@ -83,8 +89,11 @@ Image generation takes ~20–40s, so listing creation is **asynchronous**:
 3. Quota middleware checks the user's plan quota for the current period (atomic, DB-backed)
 4. A `job` row is inserted (`status=pending`); `job_id` returned immediately (HTTP 202)
 5. A worker goroutine runs the orchestrator pipeline; status moves `pending → running → done|failed`
-6. On success: image saved, `Listing` JSON stored on the job row, usage counter incremented
-7. Client polls `GET /api/v1/listings/{id}` until `done`
+6. As each agent runs, the orchestrator emits **stage progress events** (`{job_id, agent, percent, task}`)
+   onto an in-memory bus; the dashboard receives them over **SSE** (`/api/v1/events`) and animates
+   the agent cards live (no polling needed)
+7. On success: image saved, `Listing` JSON stored on the job row, usage counter incremented
+8. `GET /api/v1/listings/{id}` returns the final result (SSE is the live channel; polling still works as fallback)
 
 Worker pool is in-process (configurable size), backed by the DB job table so restarts can
 requeue `pending`/`running` jobs.
@@ -99,11 +108,35 @@ requeue `pending`/`running` jobs.
 | POST | `/api/v1/listings` | user | create generation job (202 + job_id) |
 | GET | `/api/v1/listings/{id}` | user | job status + result |
 | GET | `/api/v1/listings` | user | list user's jobs (paginated) |
+| GET | `/api/v1/events` | user | **SSE** stream of live agent progress + stats |
+| GET | `/api/v1/dashboard` | user | dashboard aggregate (KPIs, order summary, sales series) |
 | POST | `/api/v1/billing/checkout` | user | LemonSqueezy checkout URL for a plan |
 | POST | `/api/v1/billing/portal` | user | customer portal URL |
 | POST | `/webhooks/lemonsqueezy` | signed | subscription lifecycle events |
 | GET | `/images/{file}` | public | serve generated image |
 | GET | `/` `/dashboard` | web | landing + dashboard pages |
+
+## 6a. Pixel dashboard layout (matches "E-COMMERCE HUB v2.0")
+
+Single authenticated screen, grid layout, pixel theme:
+
+- **Header bar** — "E-COMMERCE HUB v2.0" wordmark + live `TIME` clock (right).
+- **Left column — TEAM STATUS** — search box, `[ALL] [WORKING] [IDLE]` filter, and the 6 agents
+  as sprite rows with `WORKING/IDLE` label + animated green progress bar (driven by SSE).
+- **Center top — PRODUCT LISTING** — grid of generated listings as pixel cards (discount badge,
+  thumbnail, name, price, stock), `+ ADD PRODUCT` button (opens "new listing" form), pagination.
+- **Center bottom — SHOP DASHBOARD** — SALES OVERVIEW line chart (7 days, Chart.js) + ORDER
+  SUMMARY (total / pending / shipped / cancelled / avg order value) + TOTAL SALES / VISITORS /
+  CONVERSION tiles with trend arrows.
+- **Right column — AGENT WORK CARDS** — one card per agent (BENEFIT, PROMO, DESIGN, PROMPT,
+  STUDIO, QUALITY CHECK) showing the current task text + live progress % for the active job.
+- **Bottom KPI bar** — OVERALL SALES, TOTAL ORDERS, UNITS SOLD, ACTIVE PRODUCTS, SHOP RATING,
+  RESPONSE RATE, each with a trend percentage.
+
+Stats (orders, sales, ratings, etc.) are computed from the user's real job/listing data; for a
+brand-new account they start at zero and grow as listings are created. The agent cards and team
+status reflect **real pipeline progress** of in-flight jobs via SSE — this is what makes it
+"work like the image", not a static mockup.
 
 ## 7. Subscription & quota
 
