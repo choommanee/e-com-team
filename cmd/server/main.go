@@ -28,6 +28,7 @@ import (
 )
 
 func main() {
+	config.LoadDotenv(".env")
 	cfg := config.Load()
 	if err := cfg.Validate(); err != nil {
 		log.Fatalf("config: %v", err)
