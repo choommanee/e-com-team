@@ -18,6 +18,7 @@ import (
 	"ecomteam/internal/events"
 	"ecomteam/internal/jobs"
 	"ecomteam/internal/llm"
+	"ecomteam/internal/promo"
 	"ecomteam/internal/shopeeaff"
 	"ecomteam/internal/store"
 	"ecomteam/internal/subscription"
@@ -44,10 +45,20 @@ func newTestServer(t *testing.T) (*httptest.Server, context.CancelFunc) {
 		Bus: bus, Pool: pool, Quota: q, Catalog: cat, Billing: billing.NewMock(cfg.PublicBaseURL),
 		Affiliate: affiliate.New(llm.NewMock()),
 		Shopee:    shopeeaff.NewMock(),
+		Promo:     mustPromoBuilder(t),
 		Templates: nil,
 	})
 	ts := httptest.NewServer(srv.Handler(http.NotFoundHandler()))
 	return ts, cancel
+}
+
+func mustPromoBuilder(t *testing.T) *promo.Builder {
+	t.Helper()
+	b, err := promo.NewBuilder()
+	if err != nil {
+		t.Fatalf("promo builder: %v", err)
+	}
+	return b
 }
 
 func postJSON(t *testing.T, url, token string, body any) *http.Response {

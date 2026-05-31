@@ -2,6 +2,8 @@ package api
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"ecomteam/internal/affiliate"
@@ -70,15 +72,23 @@ func (s *Server) handlePromote(w http.ResponseWriter, r *http.Request) {
 	if name == "" {
 		name = "สินค้าตามลิงก์นี้"
 	}
-	promo, err := s.affiliate.PromoteProduct(r.Context(), name, req.PriceTHB, link)
+	promoContent, err := s.affiliate.PromoteProduct(r.Context(), name, req.PriceTHB, link)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, "could not generate promo: "+err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusOK, promoteResponse{
-		ShortLink: link,
-		Promo:     promo,
-		ImageURL:  req.ImageURL,
-	})
+	// 3) Branded promo graphic built on the REAL product image.
+	resp := promoteResponse{ShortLink: link, Promo: promoContent, ImageURL: req.ImageURL}
+	if s.promo != nil {
+		if png, gErr := s.promo.Build(req.ImageURL, promoContent.Headline, req.PriceTHB, 0); gErr == nil {
+			id := newID()
+			path := filepath.Join(s.cfg.OutputDir, "promo-"+id+".png")
+			if os.WriteFile(path, png, 0o644) == nil {
+				resp.GraphicURL = s.cfg.PublicBaseURL + "/images/promo-" + id + ".png"
+			}
+		}
+	}
+
+	writeJSON(w, http.StatusOK, resp)
 }

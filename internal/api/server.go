@@ -13,6 +13,7 @@ import (
 	"ecomteam/internal/config"
 	"ecomteam/internal/events"
 	"ecomteam/internal/jobs"
+	"ecomteam/internal/promo"
 	"ecomteam/internal/shopeeaff"
 	"ecomteam/internal/store"
 	"ecomteam/internal/subscription"
@@ -30,6 +31,7 @@ type Server struct {
 	billing   billing.Provider
 	affiliate *affiliate.AI
 	shopee    shopeeaff.Client
+	promo     *promo.Builder
 	templates *template.Template
 	now       func() time.Time
 }
@@ -46,6 +48,7 @@ type Deps struct {
 	Billing   billing.Provider
 	Affiliate *affiliate.AI
 	Shopee    shopeeaff.Client
+	Promo     *promo.Builder
 	Templates *template.Template
 }
 
@@ -62,6 +65,7 @@ func New(d Deps) *Server {
 		billing:   d.Billing,
 		affiliate: d.Affiliate,
 		shopee:    d.Shopee,
+		promo:     d.Promo,
 		templates: d.Templates,
 		now:       time.Now,
 	}

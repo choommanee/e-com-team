@@ -22,6 +22,7 @@ import (
 	"ecomteam/internal/events"
 	"ecomteam/internal/jobs"
 	"ecomteam/internal/llm"
+	"ecomteam/internal/promo"
 	"ecomteam/internal/shopeeaff"
 	"ecomteam/internal/store"
 	"ecomteam/internal/subscription"
@@ -101,6 +102,11 @@ func main() {
 		log.Fatalf("templates: %v", err)
 	}
 
+	promoBuilder, err := promo.NewBuilder()
+	if err != nil {
+		log.Fatalf("promo builder: %v", err)
+	}
+
 	srv := api.New(api.Deps{
 		Config:    cfg,
 		Store:     st,
@@ -112,6 +118,7 @@ func main() {
 		Billing:   biller,
 		Affiliate: affiliate.New(client),
 		Shopee:    shopeeClient,
+		Promo:     promoBuilder,
 		Templates: tpl,
 	})
 
