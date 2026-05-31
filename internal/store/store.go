@@ -36,6 +36,9 @@ type Store interface {
 	// Usage (per user, per billing period start)
 	GetUsage(ctx context.Context, userID string, periodStart string) (int, error)
 	IncrementUsage(ctx context.Context, userID string, periodStart string) (int, error)
+	// DecrementUsage refunds one unit (never below zero). Used to roll back a
+	// reservation when a request is rejected or a job ultimately fails.
+	DecrementUsage(ctx context.Context, userID string, periodStart string) error
 
 	// Close releases resources (no-op for in-memory).
 	Close()

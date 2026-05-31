@@ -155,3 +155,13 @@ func (m *Memory) IncrementUsage(_ context.Context, userID, periodStart string) (
 	m.usage[key]++
 	return m.usage[key], nil
 }
+
+func (m *Memory) DecrementUsage(_ context.Context, userID, periodStart string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	key := userID + "|" + periodStart
+	if m.usage[key] > 0 {
+		m.usage[key]--
+	}
+	return nil
+}

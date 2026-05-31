@@ -206,6 +206,13 @@ func (p *Postgres) IncrementUsage(ctx context.Context, userID, periodStart strin
 	return count, err
 }
 
+func (p *Postgres) DecrementUsage(ctx context.Context, userID, periodStart string) error {
+	_, err := p.pool.Exec(ctx,
+		`UPDATE usage SET count = GREATEST(count - 1, 0) WHERE user_id=$1 AND period_start=$2`,
+		userID, periodStart)
+	return err
+}
+
 // isUniqueViolation reports whether err is a Postgres unique-constraint error.
 func isUniqueViolation(err error) bool {
 	if err == nil {
