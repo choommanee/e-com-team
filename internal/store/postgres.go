@@ -220,6 +220,84 @@ func (p *Postgres) DecrementUsage(ctx context.Context, userID, periodStart strin
 	return err
 }
 
+func (p *Postgres) CreateAffiliate(ctx context.Context, a domain.Affiliate) error {
+	_, err := p.pool.Exec(ctx,
+		`INSERT INTO affiliates (user_id,code,status,bio,niche,pitch,clicks,signups,earnings_thb,created_at)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+		a.UserID, a.Code, a.Status, a.Bio, a.Niche, a.Pitch, a.Clicks, a.Signups, a.EarningsTHB, a.CreatedAt)
+	if err != nil && isUniqueViolation(err) {
+		return ErrDuplicate
+	}
+	return err
+}
+
+func (p *Postgres) GetAffiliateByUser(ctx context.Context, userID string) (domain.Affiliate, error) {
+	return p.scanAffiliate(ctx, `SELECT user_id,code,status,bio,niche,pitch,clicks,signups,earnings_thb,created_at FROM affiliates WHERE user_id=$1`, userID)
+}
+
+func (p *Postgres) GetAffiliateByCode(ctx context.Context, code string) (domain.Affiliate, error) {
+	return p.scanAffiliate(ctx, `SELECT user_id,code,status,bio,niche,pitch,clicks,signups,earnings_thb,created_at FROM affiliates WHERE code=$1`, code)
+}
+
+func (p *Postgres) scanAffiliate(ctx context.Context, q, arg string) (domain.Affiliate, error) {
+	var a domain.Affiliate
+	err := p.pool.QueryRow(ctx, q, arg).Scan(
+		&a.UserID, &a.Code, &a.Status, &a.Bio, &a.Niche, &a.Pitch, &a.Clicks, &a.Signups, &a.EarningsTHB, &a.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Affiliate{}, ErrNotFound
+	}
+	return a, err
+}
+
+func (p *Postgres) UpdateAffiliate(ctx context.Context, a domain.Affiliate) error {
+	tag, err := p.pool.Exec(ctx,
+		`UPDATE affiliates SET status=$2,bio=$3,niche=$4,pitch=$5,clicks=$6,signups=$7,earnings_thb=$8 WHERE user_id=$1`,
+		a.UserID, a.Status, a.Bio, a.Niche, a.Pitch, a.Clicks, a.Signups, a.EarningsTHB)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (p *Postgres) RecordReferral(ctx context.Context, r domain.Referral) error {
+	tag, err := p.pool.Exec(ctx,
+		`INSERT INTO referrals (referred_user_id,affiliate_code,converted,created_at)
+		 VALUES ($1,$2,$3,$4) ON CONFLICT (referred_user_id) DO NOTHING`,
+		r.ReferredUserID, r.AffiliateCode, r.Converted, r.CreatedAt)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() > 0 {
+		_, _ = p.pool.Exec(ctx, `UPDATE affiliates SET signups = signups + 1 WHERE code=$1`, r.AffiliateCode)
+	}
+	return nil
+}
+
+func (p *Postgres) GetReferralByUser(ctx context.Context, referredUserID string) (domain.Referral, error) {
+	var r domain.Referral
+	err := p.pool.QueryRow(ctx,
+		`SELECT referred_user_id,affiliate_code,converted,created_at FROM referrals WHERE referred_user_id=$1`, referredUserID).
+		Scan(&r.ReferredUserID, &r.AffiliateCode, &r.Converted, &r.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Referral{}, ErrNotFound
+	}
+	return r, err
+}
+
+func (p *Postgres) MarkReferralConverted(ctx context.Context, referredUserID string) error {
+	tag, err := p.pool.Exec(ctx, `UPDATE referrals SET converted=true WHERE referred_user_id=$1`, referredUserID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // isUniqueViolation reports whether err is a Postgres unique-constraint error.
 func isUniqueViolation(err error) bool {
 	if err == nil {

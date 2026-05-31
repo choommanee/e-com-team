@@ -30,6 +30,12 @@ func (m *Mock) Chat(_ context.Context, system, user string) (string, error) {
 		return `{"image_prompt":"A professional e-commerce product listing image. Bright orange and white studio background. Bold Thai headline text at the top. A red promo badge in the lower-right corner. Clean commercial product photography, high quality, sharp lighting."}`, nil
 	case strings.Contains(system, "agent:qc"):
 		return `{"qc_status":"passed","qc_notes":"ข้อความอ่านง่าย ราคาและโปรโมชันสอดคล้องกัน รูปครบถ้วน"}`, nil
+	case strings.Contains(system, "agent:aff_profile"):
+		return `{"bio":"นักการตลาดออนไลน์สายช่วยแม่ค้าปั้นร้านให้ขายดี ถนัดคอนเทนต์รีวิวสินค้าและไลฟ์ขายของ","niche":"แม่ค้าออนไลน์ / SME","pitch":"ช่วยร้านค้าทำรูปสินค้าระดับมือโปรด้วย AI เพิ่มยอดขายแบบไม่ต้องจ้างกราฟิก"}`, nil
+	case strings.Contains(system, "agent:aff_content"):
+		return `{"posts":["🔥 ลงของขายแล้วไม่มีคนซื้อ? ให้ AI ทำรูปสินค้าสวยๆ พร้อมป้ายโปรฯ ในพริบตา ลองเลย!","✨ ทีม AI 6 ตัวช่วยคิดจุดขาย เขียนแคปชั่น ทำรูป จบในที่เดียว ร้านไหนยังไม่ใช้ถือว่าพลาด!","🛒 อยากให้ลูกค้ากดใส่ตะกร้ารัวๆ? เริ่มฟรีได้เลยวันนี้"]}`, nil
+	case strings.Contains(system, "agent:aff_reco"):
+		return `{"recommendations":[{"category":"ความงาม/สกินแคร์","reason":"ซื้อซ้ำสูง คอนเทนต์รีวิวทำง่าย"},{"category":"แฟชั่น/เครื่องแต่งกาย","reason":"ภาพสินค้าสวยดึงดูด คอนเวอร์ชันดี"},{"category":"ของใช้ในบ้าน","reason":"กลุ่มลูกค้ากว้าง ตัดสินใจซื้อไว"},{"category":"แกตเจ็ต/อุปกรณ์ไอที","reason":"ราคาต่อชิ้นสูง คอมมิชชันคุ้ม"}]}`, nil
 	default:
 		return `{}`, nil
 	}

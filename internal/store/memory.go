@@ -18,6 +18,9 @@ type Memory struct {
 	subs     map[string]domain.Subscription // userID -> sub
 	jobs     map[string]domain.Job          // id -> job
 	usage    map[string]int                 // userID|period -> count
+	affs     map[string]domain.Affiliate    // userID -> affiliate
+	affCode  map[string]string              // code -> userID
+	refs     map[string]domain.Referral     // referredUserID -> referral
 }
 
 // NewMemory returns an empty in-memory store.
@@ -28,6 +31,9 @@ func NewMemory() *Memory {
 		subs:    map[string]domain.Subscription{},
 		jobs:    map[string]domain.Job{},
 		usage:   map[string]int{},
+		affs:    map[string]domain.Affiliate{},
+		affCode: map[string]string{},
+		refs:    map[string]domain.Referral{},
 	}
 }
 
@@ -163,5 +169,87 @@ func (m *Memory) DecrementUsage(_ context.Context, userID, periodStart string) e
 	if m.usage[key] > 0 {
 		m.usage[key]--
 	}
+	return nil
+}
+
+func (m *Memory) CreateAffiliate(_ context.Context, a domain.Affiliate) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, exists := m.affs[a.UserID]; exists {
+		return ErrDuplicate
+	}
+	if _, taken := m.affCode[a.Code]; taken {
+		return ErrDuplicate
+	}
+	m.affs[a.UserID] = a
+	m.affCode[a.Code] = a.UserID
+	return nil
+}
+
+func (m *Memory) GetAffiliateByUser(_ context.Context, userID string) (domain.Affiliate, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	a, ok := m.affs[userID]
+	if !ok {
+		return domain.Affiliate{}, ErrNotFound
+	}
+	return a, nil
+}
+
+func (m *Memory) GetAffiliateByCode(_ context.Context, code string) (domain.Affiliate, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	uid, ok := m.affCode[code]
+	if !ok {
+		return domain.Affiliate{}, ErrNotFound
+	}
+	return m.affs[uid], nil
+}
+
+func (m *Memory) UpdateAffiliate(_ context.Context, a domain.Affiliate) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.affs[a.UserID]; !ok {
+		return ErrNotFound
+	}
+	m.affs[a.UserID] = a
+	m.affCode[a.Code] = a.UserID
+	return nil
+}
+
+func (m *Memory) RecordReferral(_ context.Context, r domain.Referral) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, exists := m.refs[r.ReferredUserID]; exists {
+		return nil // first attribution wins; ignore duplicates
+	}
+	m.refs[r.ReferredUserID] = r
+	if uid, ok := m.affCode[r.AffiliateCode]; ok {
+		a := m.affs[uid]
+		a.Signups++
+		m.affs[uid] = a
+	}
+	return nil
+}
+
+func (m *Memory) GetReferralByUser(_ context.Context, referredUserID string) (domain.Referral, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	r, ok := m.refs[referredUserID]
+	if !ok {
+		return domain.Referral{}, ErrNotFound
+	}
+	return r, nil
+}
+
+func (m *Memory) MarkReferralConverted(_ context.Context, referredUserID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	r, ok := m.refs[referredUserID]
+	if !ok {
+		return ErrNotFound
+	}
+	r.Converted = true
+	m.refs[referredUserID] = r
 	return nil
 }

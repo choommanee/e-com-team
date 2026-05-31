@@ -68,6 +68,28 @@ type Listing struct {
 	QCNotes       string   `json:"qc_notes"`
 }
 
+// Affiliate is a user enrolled in the affiliate/referral program.
+type Affiliate struct {
+	UserID    string    `json:"user_id"`
+	Code      string    `json:"code"`   // unique referral code
+	Status    string    `json:"status"` // approved | pending
+	Bio       string    `json:"bio"`    // AI-generated profile
+	Niche     string    `json:"niche"`
+	Pitch     string    `json:"pitch"`
+	Clicks    int       `json:"clicks"`
+	Signups   int       `json:"signups"`
+	EarningsTHB int     `json:"earnings_thb"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// Referral records that a user signed up through an affiliate's code.
+type Referral struct {
+	ReferredUserID string    `json:"referred_user_id"`
+	AffiliateCode  string    `json:"affiliate_code"`
+	Converted      bool      `json:"converted"` // true once the referred user upgrades
+	CreatedAt      time.Time `json:"created_at"`
+}
+
 // EventType enumerates realtime event kinds pushed to dashboards.
 type EventType string
 

@@ -40,6 +40,17 @@ type Store interface {
 	// reservation when a request is rejected or a job ultimately fails.
 	DecrementUsage(ctx context.Context, userID string, periodStart string) error
 
+	// Affiliates
+	CreateAffiliate(ctx context.Context, a domain.Affiliate) error
+	GetAffiliateByUser(ctx context.Context, userID string) (domain.Affiliate, error)
+	GetAffiliateByCode(ctx context.Context, code string) (domain.Affiliate, error)
+	UpdateAffiliate(ctx context.Context, a domain.Affiliate) error
+
+	// Referrals
+	RecordReferral(ctx context.Context, r domain.Referral) error
+	GetReferralByUser(ctx context.Context, referredUserID string) (domain.Referral, error)
+	MarkReferralConverted(ctx context.Context, referredUserID string) error
+
 	// Close releases resources (no-op for in-memory).
 	Close()
 }
