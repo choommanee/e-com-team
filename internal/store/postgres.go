@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,12 @@ import (
 
 	"ecomteam/internal/domain"
 )
+
+//go:embed schema.sql
+var schemaSQL string
+
+// Schema returns the embedded database schema (idempotent CREATE TABLE IF NOT EXISTS).
+func Schema() string { return schemaSQL }
 
 // Postgres is a pgx-backed Store.
 type Postgres struct {

@@ -1,0 +1,143 @@
+{{define "dashboard"}}<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/pixel.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- Auth overlay -->
+<div id="authOverlay" class="overlay">
+  <div class="panel card">
+    <h2 class="panel-title pixel-font" style="font-size:13px">🛒 E-COMMERCE HUB</h2>
+    <div class="field"><label>อีเมล</label><input id="authEmail" type="email" placeholder="you@example.com"></div>
+    <div class="field"><label>รหัสผ่าน</label><input id="authPassword" type="password" placeholder="อย่างน้อย 6 ตัว"></div>
+    <div class="err" id="authErr"></div>
+    <div style="display:flex; gap:10px; margin-top:6px">
+      <button class="btn primary" id="btnLogin" style="flex:1">เข้าสู่ระบบ</button>
+      <button class="btn cyan" id="btnRegister" style="flex:1">สมัครใหม่</button>
+    </div>
+    <p class="muted center" style="margin-top:14px; font-size:15px">AI Listing Team · 6 Agents</p>
+  </div>
+</div>
+
+<!-- Add product modal -->
+<div id="addOverlay" class="overlay hidden">
+  <div class="panel card">
+    <h2 class="panel-title pixel-font" style="font-size:12px">+ สร้าง LISTING ใหม่</h2>
+    <div class="field"><label>ชื่อสินค้า</label><input id="newProduct" placeholder="เช่น ครีมกันแดด"></div>
+    <div class="field">
+      <label>ภาษา</label>
+      <select id="newLang" class="search">
+        <option value="th">ไทย</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+    <div class="err" id="addErr"></div>
+    <div style="display:flex; gap:10px; margin-top:6px">
+      <button class="btn primary" id="btnGenerate" style="flex:1">🚀 ให้ AI ทำงาน</button>
+      <button class="btn" id="btnCancelAdd" style="flex:1">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="hub-header">
+  <div class="hub-logo">E-COMMERCE HUB <span class="v">v2.0</span></div>
+  <div style="display:flex; gap:12px; align-items:center">
+    <span class="muted" id="userBadge"></span>
+    <div class="hub-clock" id="clock">--:-- --</div>
+    <button class="btn" id="btnLogout" style="font-size:8px">ออก</button>
+  </div>
+</header>
+
+<!-- Main grid -->
+<main class="hub-grid" id="app" style="visibility:hidden">
+  <!-- Team status -->
+  <section class="panel area-team">
+    <h3 class="panel-title"><span class="ico">▣</span> TEAM STATUS</h3>
+    <input class="search" placeholder="Search..." id="teamSearch">
+    <div class="filters">
+      <span class="chip active" data-f="all">[ALL]</span>
+      <span class="chip" data-f="working">[WORKING]</span>
+      <span class="chip" data-f="idle">[IDLE]</span>
+    </div>
+    <div id="teamList"></div>
+  </section>
+
+  <!-- Center: product listing + shop dashboard -->
+  <section class="area-listing">
+    <div class="panel">
+      <div class="listing-head">
+        <h3 class="panel-title" style="margin:0"><span class="ico">🛍</span> PRODUCT LISTING</h3>
+        <button class="btn" id="btnAdd">+ ADD PRODUCT</button>
+      </div>
+      <div class="product-grid" id="productGrid" style="margin-top:12px"></div>
+      <p class="muted center" id="emptyHint" style="margin-top:14px"></p>
+    </div>
+
+    <div class="panel">
+      <h3 class="panel-title"><span class="ico">📊</span> SHOP DASHBOARD</h3>
+      <div class="dash-row">
+        <div>
+          <div class="muted" style="font-size:15px">SALES OVERVIEW (7 DAYS)</div>
+          <canvas id="salesChart" height="150"></canvas>
+          <div class="kpi-tiles">
+            <div class="tile"><div class="label">Total Sales</div><div class="value" id="tTotalSales">฿0</div><div class="trend">▲ 15.6%</div></div>
+            <div class="tile"><div class="label">Visitors</div><div class="value" id="tVisitors">0</div><div class="trend">▲ 12.3%</div></div>
+            <div class="tile"><div class="label">Conversion</div><div class="value" id="tConv">0%</div><div class="trend">▲ 8.7%</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:15px">ORDER SUMMARY</div>
+          <div class="summary-row"><span class="k">🛒 Total Orders</span><span class="v" id="oTotal">0</span></div>
+          <div class="summary-row"><span class="k">🕐 Pending</span><span class="v" id="oPending">0</span></div>
+          <div class="summary-row"><span class="k">🚚 Shipped</span><span class="v" id="oShipped">0</span></div>
+          <div class="summary-row"><span class="k">✖ Cancelled</span><span class="v" id="oCancelled">0</span></div>
+          <div class="summary-row"><span class="k">🔒 Avg Order</span><span class="v" id="oAvg">฿0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plan / quota -->
+    <div class="panel">
+      <h3 class="panel-title"><span class="ico">⭐</span> PLAN & QUOTA</h3>
+      <div class="summary-row"><span class="k">แพ็กเกจปัจจุบัน</span><span class="v" id="planName">FREE</span></div>
+      <div class="summary-row"><span class="k">ใช้ไป / โควต้าเดือนนี้</span><span class="v" id="quotaUsage">0 / 5</span></div>
+      <div class="price-grid" style="margin-top:14px">
+        {{range .Plans}}
+        <div class="panel price-card">
+          <div class="pixel-font" style="font-size:11px; color:var(--white)">{{.Name}}</div>
+          <div class="amt">฿{{.PriceTHB}}</div>
+          <div class="muted" style="font-size:15px">{{.MonthlyQuota}} listings/เดือน</div>
+          {{if ne (printf "%s" .ID) "free"}}
+          <button class="btn primary upgrade-btn" data-plan="{{.ID}}" style="margin-top:10px; width:100%">UPGRADE</button>
+          {{end}}
+        </div>
+        {{end}}
+      </div>
+    </div>
+  </section>
+
+  <!-- Right: agent work cards -->
+  <section class="area-agents" id="agentCards"></section>
+</main>
+
+<!-- Bottom KPI bar -->
+<footer class="kpi-bar" id="kpiBar" style="visibility:hidden">
+  <div class="kpi"><div class="klabel">Overall Sales</div><div class="kvalue" id="kSales">฿0</div><div class="ktrend">▲ 15.6%</div></div>
+  <div class="kpi"><div class="klabel">Total Orders</div><div class="kvalue" id="kOrders">0</div><div class="ktrend">▲ 14.2%</div></div>
+  <div class="kpi"><div class="klabel">Units Sold</div><div class="kvalue" id="kUnits">0</div><div class="ktrend">▲ 13.8%</div></div>
+  <div class="kpi"><div class="klabel">Active Products</div><div class="kvalue" id="kProducts">0</div><div class="ktrend">▲ 5.2%</div></div>
+  <div class="kpi"><div class="klabel">Shop Rating</div><div class="kvalue" id="kRating">0.0</div><div class="ktrend">★★★★★</div></div>
+  <div class="kpi"><div class="klabel">Response Rate</div><div class="kvalue" id="kResponse">96%</div><div class="ktrend">▲ 3.1%</div></div>
+</footer>
+
+<script src="/static/js/dashboard.js"></script>
+</body>
+</html>{{end}}

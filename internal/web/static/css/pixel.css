@@ -1,0 +1,197 @@
+/* E-COMMERCE HUB — pixel-art dashboard theme */
+:root {
+  --bg: #0a1024;
+  --bg-2: #0d1530;
+  --panel: #111a38;
+  --panel-2: #0e1730;
+  --border: #1f3b6e;
+  --border-glow: #2e7fff;
+  --cyan: #36e0ff;
+  --green: #39ff88;
+  --green-2: #1fa85a;
+  --orange: #ff6a2d;
+  --orange-2: #ee4d2d;
+  --yellow: #ffd23f;
+  --red: #ff4d5e;
+  --text: #cfe0ff;
+  --text-dim: #6f86b8;
+  --white: #eaf2ff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 20% 0%, #14254f 0%, transparent 45%),
+    radial-gradient(circle at 90% 10%, #122a4d 0%, transparent 40%),
+    var(--bg);
+  color: var(--text);
+  font-family: "VT323", monospace;
+  font-size: 20px;
+  letter-spacing: .5px;
+  -webkit-font-smoothing: none;
+  image-rendering: pixelated;
+}
+
+.pixel-font { font-family: "Press Start 2P", monospace; letter-spacing: 0; }
+
+a { color: var(--cyan); text-decoration: none; }
+a:hover { color: var(--white); }
+
+/* ---------- Header ---------- */
+.hub-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px; border-bottom: 3px solid var(--border);
+  background: linear-gradient(180deg, #0c1733, #0a1024);
+}
+.hub-logo { font-family: "Press Start 2P", monospace; font-size: 26px; color: var(--white);
+  text-shadow: 0 0 10px var(--border-glow); }
+.hub-logo .v { color: var(--cyan); font-size: 16px; margin-left: 8px; }
+.hub-clock {
+  font-family: "Press Start 2P", monospace; font-size: 18px; color: var(--cyan);
+  border: 2px solid var(--border); padding: 8px 14px; border-radius: 4px;
+  background: #08122b; box-shadow: inset 0 0 12px rgba(54,224,255,.25);
+}
+
+/* ---------- Layout grid ---------- */
+.hub-grid {
+  display: grid; gap: 14px; padding: 14px;
+  grid-template-columns: 260px 1.4fr 1fr;
+  grid-template-areas: "team listing agents";
+}
+@media (max-width: 1100px) {
+  .hub-grid { grid-template-columns: 1fr; grid-template-areas: "team" "listing" "agents"; }
+}
+.area-team { grid-area: team; }
+.area-listing { grid-area: listing; display: flex; flex-direction: column; gap: 14px; }
+.area-agents { grid-area: agents; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  align-content: start; }
+@media (max-width: 1500px) { .area-agents { grid-template-columns: 1fr; } }
+
+/* ---------- Panels ---------- */
+.panel {
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+  border: 2px solid var(--border); border-radius: 6px; padding: 14px;
+  box-shadow: 0 0 0 1px #060c1d, inset 0 0 22px rgba(20,46,99,.35);
+}
+.panel-title { font-family: "Press Start 2P", monospace; font-size: 12px; color: var(--white);
+  margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+.panel-title .ico { color: var(--orange); }
+
+/* ---------- Team status ---------- */
+.search { width: 100%; background: #08122b; border: 2px solid var(--border); color: var(--text);
+  padding: 8px 10px; border-radius: 4px; font-family: "VT323", monospace; font-size: 18px; }
+.filters { display: flex; gap: 6px; margin: 10px 0 14px; }
+.filters .chip { font-family: "Press Start 2P", monospace; font-size: 8px; padding: 6px 8px;
+  border: 2px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--text-dim); }
+.filters .chip.active { color: var(--cyan); border-color: var(--cyan); }
+
+.agent-row { display: flex; align-items: center; gap: 10px; padding: 8px 0;
+  border-bottom: 1px dashed #1b2c54; }
+.agent-avatar { width: 40px; height: 40px; border: 2px solid var(--border); border-radius: 4px;
+  background: #0a1430 center/cover no-repeat; flex: 0 0 auto; image-rendering: pixelated; }
+.agent-meta { flex: 1; min-width: 0; }
+.agent-name { font-family: "Press Start 2P", monospace; font-size: 9px; color: var(--white); }
+.agent-state { font-size: 16px; color: var(--text-dim); }
+.agent-state.working { color: var(--green); }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--text-dim); flex:0 0 auto; }
+.status-dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+/* ---------- Progress bar ---------- */
+.bar { height: 10px; background: #0a1430; border: 1px solid var(--border); border-radius: 3px;
+  overflow: hidden; margin-top: 5px; }
+.bar > span { display: block; height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--green-2), var(--green));
+  box-shadow: 0 0 8px var(--green); transition: width .4s ease; }
+.bar.cyan > span { background: linear-gradient(90deg, #1c6fb0, var(--cyan)); box-shadow: 0 0 8px var(--cyan); }
+
+/* ---------- Product listing ---------- */
+.listing-head { display: flex; align-items: center; justify-content: space-between; }
+.btn {
+  font-family: "Press Start 2P", monospace; font-size: 9px; cursor: pointer;
+  border: 2px solid var(--orange); color: var(--orange); background: transparent;
+  padding: 8px 12px; border-radius: 4px;
+}
+.btn:hover { background: var(--orange); color: #1a0e06; }
+.btn.primary { border-color: var(--green); color: var(--green); }
+.btn.primary:hover { background: var(--green); color: #04130a; }
+.btn.cyan { border-color: var(--cyan); color: var(--cyan); }
+
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+.product-card { background: #0b1530; border: 2px solid var(--border); border-radius: 6px;
+  padding: 8px; position: relative; }
+.product-card .thumb { width: 100%; aspect-ratio: 1/1; border-radius: 4px; object-fit: cover;
+  background: #0a1024; image-rendering: pixelated; border: 1px solid #14224a; }
+.product-card .pname { font-size: 16px; color: var(--white); margin-top: 6px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.product-card .price { color: var(--orange); font-family: "Press Start 2P", monospace; font-size: 10px; }
+.product-card .stock { color: var(--text-dim); font-size: 15px; }
+.badge { position: absolute; top: 6px; left: 6px; background: var(--orange-2); color: #fff;
+  font-family: "Press Start 2P", monospace; font-size: 7px; padding: 4px 5px; border-radius: 3px; }
+.badge.status { left: auto; right: 6px; background: #143; }
+.badge.status.pending { background: #7a5b00; color: var(--yellow); }
+.badge.status.running { background: #0a3b6b; color: var(--cyan); }
+.badge.status.failed { background: #5a1620; color: var(--red); }
+
+/* ---------- Dashboard stats ---------- */
+.dash-row { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+@media (max-width: 800px) { .dash-row { grid-template-columns: 1fr; } }
+.kpi-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+.tile { background: #0b1530; border: 2px solid var(--border); border-radius: 5px; padding: 10px; }
+.tile .label { font-size: 14px; color: var(--text-dim); text-transform: uppercase; }
+.tile .value { font-family: "Press Start 2P", monospace; font-size: 13px; color: var(--white); margin-top: 6px; }
+.tile .trend { color: var(--green); font-size: 15px; }
+
+.summary-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px dashed #1b2c54; }
+.summary-row .k { color: var(--text-dim); }
+.summary-row .v { font-family: "Press Start 2P", monospace; font-size: 11px; color: var(--white); }
+
+/* ---------- Agent work cards (right) ---------- */
+.work-card { background: linear-gradient(180deg, #111d3e, #0d1730);
+  border: 2px solid var(--border); border-radius: 6px; padding: 12px; }
+.work-card .wc-head { display: flex; align-items: center; justify-content: space-between; }
+.work-card .wc-name { font-family: "Press Start 2P", monospace; font-size: 9px; color: var(--white); }
+.work-card .wc-art { width: 100%; height: 78px; border-radius: 4px; margin: 8px 0; object-fit: cover;
+  background: #0a1024; border: 1px solid #14224a; image-rendering: pixelated; }
+.work-card .wc-task { font-size: 16px; color: var(--cyan); min-height: 22px; }
+.work-card .wc-pct { float: right; color: var(--green); font-family: "Press Start 2P", monospace; font-size: 9px; }
+
+/* ---------- Bottom KPI bar ---------- */
+.kpi-bar { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; padding: 14px;
+  border-top: 3px solid var(--border); background: linear-gradient(0deg, #0c1733, #0a1024); }
+@media (max-width: 1100px) { .kpi-bar { grid-template-columns: repeat(2, 1fr); } }
+.kpi { background: #0b1530; border: 2px solid var(--border); border-radius: 6px; padding: 12px 14px; }
+.kpi .klabel { font-size: 14px; color: var(--text-dim); text-transform: uppercase; }
+.kpi .kvalue { font-family: "Press Start 2P", monospace; font-size: 18px; color: var(--white); margin: 8px 0 4px; }
+.kpi .ktrend { color: var(--green); font-size: 15px; }
+
+/* ---------- Auth overlay ---------- */
+.overlay { position: fixed; inset: 0; background: rgba(5,9,22,.92); display: flex;
+  align-items: center; justify-content: center; z-index: 50; }
+.overlay .card { width: 360px; max-width: 92vw; }
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 15px; color: var(--text-dim); margin-bottom: 4px; }
+.field input { width: 100%; background: #08122b; border: 2px solid var(--border); color: var(--text);
+  padding: 10px; border-radius: 4px; font-family: "VT323", monospace; font-size: 18px; }
+.err { color: var(--red); font-size: 16px; min-height: 20px; }
+.muted { color: var(--text-dim); }
+.center { text-align: center; }
+.hidden { display: none !important; }
+.toast { position: fixed; bottom: 18px; right: 18px; background: #0b1530; border: 2px solid var(--green);
+  color: var(--green); padding: 12px 16px; border-radius: 6px; z-index: 60; font-size: 17px; }
+
+/* ---------- Landing ---------- */
+.landing { max-width: 1000px; margin: 0 auto; padding: 24px; }
+.hero { text-align: center; padding: 60px 16px; }
+.hero h1 { font-family: "Press Start 2P", monospace; font-size: 28px; color: var(--white);
+  line-height: 1.5; text-shadow: 0 0 14px var(--border-glow); }
+.hero p { font-size: 22px; color: var(--text); max-width: 640px; margin: 18px auto; }
+.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 800px) { .feature-grid { grid-template-columns: 1fr; } }
+.price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; }
+@media (max-width: 800px) { .price-grid { grid-template-columns: 1fr; } }
+.price-card { text-align: center; }
+.price-card .amt { font-family: "Press Start 2P", monospace; font-size: 20px; color: var(--orange); margin: 12px 0; }
+.section-title { font-family: "Press Start 2P", monospace; font-size: 16px; color: var(--cyan);
+  margin: 40px 0 18px; text-align: center; }

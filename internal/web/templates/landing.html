@@ -1,0 +1,49 @@
+{{define "landing"}}<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/pixel.css">
+</head>
+<body>
+<header class="hub-header">
+  <div class="hub-logo">E-COMMERCE HUB <span class="v">v2.0</span></div>
+  <a class="btn primary" href="/dashboard">เข้าใช้งาน →</a>
+</header>
+
+<div class="landing">
+  <section class="hero">
+    <h1>ลงของขายให้<span style="color:var(--orange)">ลูกค้ากดซื้อ</span><br>ด้วยทีม AI 6 ตัว</h1>
+    <p>แค่พิมพ์ชื่อสินค้า ทีม AI จะคิดจุดขาย เขียนคำโปรโมชัน ออกแบบเลย์เอาต์ และสร้างรูปสินค้าพร้อมป้ายยาให้เสร็จในพริบตา</p>
+    <a class="btn primary" href="/dashboard" style="font-size:12px; padding:14px 22px">🚀 เริ่มใช้ฟรี</a>
+  </section>
+
+  <h2 class="section-title">⚙ ทีม AI 6 ตัวของคุณ</h2>
+  <div class="feature-grid">
+    <div class="panel"><h3 class="panel-title">① BENEFIT</h3><p>วิเคราะห์จุดขายหลัก 3 ข้อที่แก้ปัญหาให้ลูกค้า</p></div>
+    <div class="panel"><h3 class="panel-title">② PROMO</h3><p>คิดคำพาดหัวและข้อความโปรโมชันกระตุ้นยอดขาย</p></div>
+    <div class="panel"><h3 class="panel-title">③ DESIGN</h3><p>ออกแบบเลย์เอาต์และโทนสีที่ดึงดูดสายตา</p></div>
+    <div class="panel"><h3 class="panel-title">④ PROMPT</h3><p>แปลงคอนเซปต์เป็นคำสั่งภาพละเอียดระดับมือโปร</p></div>
+    <div class="panel"><h3 class="panel-title">⑤ STUDIO</h3><p>สร้างรูปสินค้าพร้อมป้ายโปรฯ ด้วย AI Image</p></div>
+    <div class="panel"><h3 class="panel-title">⑥ QUALITY CHECK</h3><p>ตรวจความถูกต้องของ listing ก่อนส่งมอบ</p></div>
+  </div>
+
+  <h2 class="section-title">💎 แพ็กเกจ</h2>
+  <div class="price-grid">
+    {{range .Plans}}
+    <div class="panel price-card">
+      <div class="pixel-font" style="font-size:13px; color:var(--white)">{{.Name}}</div>
+      <div class="amt">฿{{.PriceTHB}}<span style="font-size:14px; color:var(--text-dim)">/เดือน</span></div>
+      <div class="muted">{{.MonthlyQuota}} listings ต่อเดือน</div>
+      <a class="btn primary" href="/dashboard" style="margin-top:14px; display:inline-block">เลือก</a>
+    </div>
+    {{end}}
+  </div>
+
+  <p class="muted center" style="margin:50px 0">E-COMMERCE HUB · powered by a 6-agent AI pipeline · Go + OpenAI</p>
+</div>
+</body>
+</html>{{end}}
