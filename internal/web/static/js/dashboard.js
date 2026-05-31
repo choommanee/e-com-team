@@ -21,13 +21,19 @@
   };
 
   // ---------- Auth ----------
+  function refCode() {
+    const u = new URLSearchParams(location.search).get("ref");
+    if (u) return u;
+    const m = document.cookie.match(/(?:^|;\s*)ecom_ref=([^;]+)/);
+    return m ? m[1] : "";
+  }
   async function authRequest(path) {
     const email = $("authEmail").value.trim();
     const password = $("authPassword").value;
     $("authErr").textContent = "";
     const r = await fetch(path, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, ref: refCode() }),
     });
     const data = await r.json();
     if (!r.ok) { $("authErr").textContent = data.error || "เกิดข้อผิดพลาด"; return; }
@@ -50,6 +56,7 @@
     $("kpiBar").style.visibility = "visible";
     renderAgentCards();
     loadDashboard();
+    loadAffiliate();
     connectSSE();
   }
 
@@ -253,6 +260,59 @@
     else { toast(data.error || "เปิด checkout ไม่ได้", true); }
   }
 
+  // ---------- Affiliate ----------
+  let affLink = "";
+  async function loadAffiliate() {
+    const r = await api("/api/v1/affiliate");
+    const d = await r.json();
+    if (d.enrolled === false) {
+      $("affApply").classList.remove("hidden");
+      $("affPanel").classList.add("hidden");
+      return;
+    }
+    showAffiliate(d);
+  }
+  function showAffiliate(d) {
+    $("affApply").classList.add("hidden");
+    $("affPanel").classList.remove("hidden");
+    const a = d.affiliate;
+    affLink = d.referral_link || "";
+    $("affClicks").textContent = a.clicks;
+    $("affSignups").textContent = a.signups;
+    $("affEarnings").textContent = baht(a.earnings_thb);
+    $("affLink").value = affLink;
+    $("affNicheVal").textContent = a.niche || "—";
+    $("affBio").textContent = a.bio || "";
+  }
+  async function affApply() {
+    $("affErr").textContent = "";
+    const btn = $("btnAffApply");
+    btn.textContent = "🤖 AI กำลังเขียนใบสมัคร..."; btn.disabled = true;
+    const r = await api("/api/v1/affiliate/apply", { method: "POST",
+      body: JSON.stringify({ niche_hint: $("affNiche").value, audience: $("affAudience").value }) });
+    btn.textContent = "🤖 ให้ AI สมัครให้"; btn.disabled = false;
+    const d = await r.json();
+    if (!r.ok) { $("affErr").textContent = d.error || "สมัครไม่สำเร็จ"; return; }
+    showAffiliate(d);
+    toast("🎉 สมัคร affiliate สำเร็จ! แชร์ลิงก์ได้เลย");
+  }
+  async function affContent() {
+    $("affOutput").innerHTML = `<p class="muted">✍️ AI กำลังเขียนโพสต์...</p>`;
+    const r = await api("/api/v1/affiliate/content", { method: "POST", body: JSON.stringify({ topic: "" }) });
+    const d = await r.json();
+    if (!r.ok) { $("affOutput").innerHTML = `<p class="err">${escapeHtml(d.error || "")}</p>`; return; }
+    $("affOutput").innerHTML = `<div class="muted" style="font-size:15px">คอนเทนต์พร้อมโพสต์ (กดเพื่อคัดลอก):</div>` +
+      d.posts.map((p) => `<div class="tile" style="margin-top:8px; cursor:pointer" onclick="navigator.clipboard.writeText(this.dataset.t)" data-t="${escapeHtml(p)}">${escapeHtml(p)}</div>`).join("");
+  }
+  async function affReco() {
+    $("affOutput").innerHTML = `<p class="muted">💡 AI กำลังวิเคราะห์...</p>`;
+    const r = await api("/api/v1/affiliate/recommendations");
+    const d = await r.json();
+    if (!r.ok) { $("affOutput").innerHTML = `<p class="err">${escapeHtml(d.error || "")}</p>`; return; }
+    $("affOutput").innerHTML = `<div class="muted" style="font-size:15px">สินค้าที่ AI แนะนำให้โปรโม:</div>` +
+      d.recommendations.map((x) => `<div class="summary-row"><span class="k">${escapeHtml(x.category)}</span><span class="v" style="font-size:14px; color:var(--cyan)">${escapeHtml(x.reason)}</span></div>`).join("");
+  }
+
   // ---------- Misc UI ----------
   function clock() {
     const d = new Date();
@@ -279,6 +339,10 @@
   $("btnCancelAdd").onclick = () => $("addOverlay").classList.add("hidden");
   $("btnGenerate").onclick = generate;
   document.querySelectorAll(".upgrade-btn").forEach((b) => b.onclick = () => upgrade(b.dataset.plan));
+  $("btnAffApply").onclick = affApply;
+  $("btnAffContent").onclick = affContent;
+  $("btnAffReco").onclick = affReco;
+  $("btnCopyLink").onclick = () => { navigator.clipboard.writeText(affLink); toast("📋 คัดลอกลิงก์แล้ว"); };
   document.querySelectorAll(".filters .chip").forEach((c) => c.onclick = () => {
     document.querySelectorAll(".filters .chip").forEach((x) => x.classList.remove("active"));
     c.classList.add("active"); teamFilter = c.dataset.f; renderTeam([]);

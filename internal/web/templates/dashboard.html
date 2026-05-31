@@ -124,6 +124,44 @@
     </div>
   </section>
 
+    <!-- Affiliate program -->
+    <div class="panel">
+      <h3 class="panel-title"><span class="ico">🤝</span> AFFILIATE PROGRAM <span class="muted" style="font-size:13px">— AI ช่วยสมัคร</span></h3>
+
+      <!-- Not enrolled -->
+      <div id="affApply">
+        <p class="muted" style="font-size:16px">สมัครเป็นพาร์ทเนอร์ แชร์ลิงก์ได้ค่าคอม 20% ทุกครั้งที่คนสมัครแพ็กเกจผ่านคุณ — ให้ AI เขียนใบสมัครให้เลย</p>
+        <div class="field"><label>สายคอนเทนต์ / niche (ถ้ามี)</label><input id="affNiche" class="search" placeholder="เช่น บิวตี้, ของกิน, แกตเจ็ต"></div>
+        <div class="field"><label>กลุ่มผู้ติดตาม (ถ้ามี)</label><input id="affAudience" class="search" placeholder="เช่น แม่ค้าออนไลน์, วัยรุ่น"></div>
+        <div class="err" id="affErr"></div>
+        <button class="btn primary" id="btnAffApply">🤖 ให้ AI สมัครให้</button>
+      </div>
+
+      <!-- Enrolled -->
+      <div id="affPanel" class="hidden">
+        <div class="kpi-tiles">
+          <div class="tile"><div class="label">Clicks</div><div class="value" id="affClicks">0</div></div>
+          <div class="tile"><div class="label">Signups</div><div class="value" id="affSignups">0</div></div>
+          <div class="tile"><div class="label">Earnings</div><div class="value" id="affEarnings">฿0</div></div>
+        </div>
+        <div class="field" style="margin-top:12px">
+          <label>ลิงก์ชวนเพื่อนของคุณ</label>
+          <div style="display:flex; gap:8px">
+            <input id="affLink" class="search" readonly>
+            <button class="btn cyan" id="btnCopyLink">COPY</button>
+          </div>
+        </div>
+        <div class="summary-row"><span class="k">โปรไฟล์ (AI)</span><span class="v" id="affNicheVal">—</span></div>
+        <p class="muted" id="affBio" style="font-size:16px"></p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px">
+          <button class="btn primary" id="btnAffContent">✍️ สร้างคอนเทนต์โปรโม (AI)</button>
+          <button class="btn cyan" id="btnAffReco">💡 แนะนำสินค้าโปรโม (AI)</button>
+        </div>
+        <div id="affOutput" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- Right: agent work cards -->
   <section class="area-agents" id="agentCards"></section>
 </main>
