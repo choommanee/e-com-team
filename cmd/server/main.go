@@ -48,12 +48,17 @@ func main() {
 	var client llm.Client
 	if cfg.AIMode == "real" {
 		// Real text + image, with a placeholder-image fallback so a missing
-		// gpt-image-1 entitlement (org verification) doesn't break the pipeline.
-		client = llm.WithImageFallback(
-			llm.NewOpenAI(cfg.OpenAIAPIKey, cfg.OpenAIModel, cfg.OpenAIImage),
-			llm.NewMock(),
-		)
-		log.Println("AI: OpenAI (real text + image, placeholder fallback on image error)")
+		// image entitlement (e.g. org verification) doesn't break the pipeline.
+		var primary llm.Client
+		switch cfg.AIProvider {
+		case "gemini":
+			primary = llm.NewGemini(cfg.GeminiAPIKey, cfg.GeminiModel, cfg.GeminiImage)
+			log.Printf("AI: Gemini real (%s + %s, placeholder fallback on image error)", cfg.GeminiModel, cfg.GeminiImage)
+		default:
+			primary = llm.NewOpenAI(cfg.OpenAIAPIKey, cfg.OpenAIModel, cfg.OpenAIImage)
+			log.Printf("AI: OpenAI real (%s + %s, placeholder fallback on image error)", cfg.OpenAIModel, cfg.OpenAIImage)
+		}
+		client = llm.WithImageFallback(primary, llm.NewMock())
 	} else {
 		client = llm.NewMock()
 		log.Println("AI: mock")

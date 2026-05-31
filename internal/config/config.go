@@ -27,9 +27,16 @@ type Config struct {
 	SeedPassword string
 	SeedPlan     string // free | pro | business
 
+	// AIProvider selects the real backend when AIMode=real: "openai" or "gemini".
+	AIProvider string
+
 	OpenAIAPIKey string
 	OpenAIModel  string // chat model, e.g. "gpt-4o-mini"
 	OpenAIImage  string // image model, e.g. "gpt-image-1"
+
+	GeminiAPIKey string
+	GeminiModel  string // chat model, e.g. "gemini-2.0-flash"
+	GeminiImage  string // image model, e.g. "gemini-2.0-flash-preview-image-generation"
 
 	DatabaseURL string
 
@@ -53,9 +60,15 @@ func Load() Config {
 
 		JWTSecret: env("JWT_SECRET", "dev-insecure-secret-change-me"),
 
+		AIProvider: env("AI_PROVIDER", "openai"),
+
 		OpenAIAPIKey: os.Getenv("OPENAI_API_KEY"),
 		OpenAIModel:  env("OPENAI_MODEL", "gpt-4o-mini"),
 		OpenAIImage:  env("OPENAI_IMAGE_MODEL", "gpt-image-1"),
+
+		GeminiAPIKey: os.Getenv("GEMINI_API_KEY"),
+		GeminiModel:  env("GEMINI_MODEL", "gemini-2.0-flash"),
+		GeminiImage:  env("GEMINI_IMAGE_MODEL", "gemini-2.0-flash-preview-image-generation"),
 
 		DatabaseURL: env("DATABASE_URL", ""),
 
@@ -87,8 +100,17 @@ func Load() Config {
 
 // Validate checks that required values are present for the selected modes.
 func (c Config) Validate() error {
-	if c.AIMode == "real" && c.OpenAIAPIKey == "" {
-		return fmt.Errorf("AI_MODE=real requires OPENAI_API_KEY")
+	if c.AIMode == "real" {
+		switch c.AIProvider {
+		case "gemini":
+			if c.GeminiAPIKey == "" {
+				return fmt.Errorf("AI_MODE=real with AI_PROVIDER=gemini requires GEMINI_API_KEY")
+			}
+		default: // openai
+			if c.OpenAIAPIKey == "" {
+				return fmt.Errorf("AI_MODE=real requires OPENAI_API_KEY")
+			}
+		}
 	}
 	if c.BillingMode == "real" {
 		if c.LemonSqueezyAPIKey == "" || c.LemonSqueezyWebhookSecret == "" {
