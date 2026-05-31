@@ -22,6 +22,7 @@ import (
 	"ecomteam/internal/events"
 	"ecomteam/internal/jobs"
 	"ecomteam/internal/llm"
+	"ecomteam/internal/shopeeaff"
 	"ecomteam/internal/store"
 	"ecomteam/internal/subscription"
 	"ecomteam/internal/web"
@@ -64,6 +65,16 @@ func main() {
 		log.Println("AI: mock")
 	}
 
+	// --- Shopee Affiliate ---
+	var shopeeClient shopeeaff.Client
+	if cfg.ShopeeAffMode == "real" {
+		shopeeClient = shopeeaff.NewShopee(cfg.ShopeeAffAppID, cfg.ShopeeAffSecret, cfg.ShopeeAffRegion)
+		log.Println("Shopee Affiliate: real Open API")
+	} else {
+		shopeeClient = shopeeaff.NewMock()
+		log.Println("Shopee Affiliate: mock (sample products)")
+	}
+
 	// --- Billing ---
 	var biller billing.Provider
 	if cfg.BillingMode == "real" {
@@ -100,6 +111,7 @@ func main() {
 		Catalog:   catalog,
 		Billing:   biller,
 		Affiliate: affiliate.New(client),
+		Shopee:    shopeeClient,
 		Templates: tpl,
 	})
 

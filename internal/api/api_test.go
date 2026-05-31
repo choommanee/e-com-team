@@ -18,6 +18,7 @@ import (
 	"ecomteam/internal/events"
 	"ecomteam/internal/jobs"
 	"ecomteam/internal/llm"
+	"ecomteam/internal/shopeeaff"
 	"ecomteam/internal/store"
 	"ecomteam/internal/subscription"
 )
@@ -42,6 +43,7 @@ func newTestServer(t *testing.T) (*httptest.Server, context.CancelFunc) {
 		Config: cfg, Store: st, Tokens: auth.NewTokenManager("test-secret", time.Hour),
 		Bus: bus, Pool: pool, Quota: q, Catalog: cat, Billing: billing.NewMock(cfg.PublicBaseURL),
 		Affiliate: affiliate.New(llm.NewMock()),
+		Shopee:    shopeeaff.NewMock(),
 		Templates: nil,
 	})
 	ts := httptest.NewServer(srv.Handler(http.NotFoundHandler()))

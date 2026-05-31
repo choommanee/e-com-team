@@ -85,6 +85,41 @@ func (a *AI) GeneratePromoContent(ctx context.Context, topic, referralLink strin
 	return parsed.Posts, nil
 }
 
+// ProductPromo is AI-written promo content for a real Shopee product.
+type ProductPromo struct {
+	Caption  string   `json:"caption"`
+	Headline string   `json:"headline"`
+	Hashtags []string `json:"hashtags"`
+}
+
+// PromoteProduct writes a ready-to-post caption + hashtags for a REAL product,
+// ending with the affiliate short link. Nothing is invented about the product.
+func (a *AI) PromoteProduct(ctx context.Context, productName string, priceTHB float64, shortLink string) (ProductPromo, error) {
+	system := "agent:aff_promote\n" +
+		"You are an affiliate marketer promoting a REAL existing product. Write a persuasive Thai " +
+		"social caption (2-4 sentences, with emojis) and a short punchy headline, plus 5 relevant " +
+		"hashtags. Do not invent specs not given. End the caption with the affiliate link. " +
+		`Respond as JSON: {"headline":"...","caption":"...","hashtags":["#..."]}`
+	user := fmt.Sprintf("Product: %s\nPrice (THB): %.0f\nAffiliate link: %s", productName, priceTHB, shortLink)
+
+	out, err := a.client.Chat(ctx, system, user)
+	if err != nil {
+		return ProductPromo{}, err
+	}
+	var p ProductPromo
+	if err := json.Unmarshal([]byte(out), &p); err != nil {
+		return ProductPromo{}, fmt.Errorf("promote: bad JSON: %w", err)
+	}
+	if p.Caption == "" {
+		return ProductPromo{}, fmt.Errorf("promote: empty caption")
+	}
+	// Guarantee the affiliate link is present.
+	if shortLink != "" && !strings.Contains(p.Caption, shortLink) {
+		p.Caption = strings.TrimSpace(p.Caption) + "\n👉 " + shortLink
+	}
+	return p, nil
+}
+
 // Recommendation is a suggested niche/product to promote.
 type Recommendation struct {
 	Category string `json:"category"`

@@ -13,6 +13,7 @@ import (
 	"ecomteam/internal/config"
 	"ecomteam/internal/events"
 	"ecomteam/internal/jobs"
+	"ecomteam/internal/shopeeaff"
 	"ecomteam/internal/store"
 	"ecomteam/internal/subscription"
 )
@@ -28,6 +29,7 @@ type Server struct {
 	catalog   *subscription.Catalog
 	billing   billing.Provider
 	affiliate *affiliate.AI
+	shopee    shopeeaff.Client
 	templates *template.Template
 	now       func() time.Time
 }
@@ -43,6 +45,7 @@ type Deps struct {
 	Catalog   *subscription.Catalog
 	Billing   billing.Provider
 	Affiliate *affiliate.AI
+	Shopee    shopeeaff.Client
 	Templates *template.Template
 }
 
@@ -58,6 +61,7 @@ func New(d Deps) *Server {
 		catalog:   d.Catalog,
 		billing:   d.Billing,
 		affiliate: d.Affiliate,
+		shopee:    d.Shopee,
 		templates: d.Templates,
 		now:       time.Now,
 	}
@@ -89,6 +93,10 @@ func (s *Server) Handler(staticFS http.Handler) http.Handler {
 	mux.Handle("POST /api/v1/affiliate/content", s.requireAuth(s.handleAffiliateContent))
 	mux.Handle("GET /api/v1/affiliate/recommendations", s.requireAuth(s.handleAffiliateRecommend))
 	mux.HandleFunc("GET /r/{code}", s.handleReferralLanding)
+
+	// --- Real Shopee affiliate: find products + generate promo ---
+	mux.Handle("GET /api/v1/products/search", s.requireAuth(s.handleProductSearch))
+	mux.Handle("POST /api/v1/promote", s.requireAuth(s.handlePromote))
 
 	// --- Billing ---
 	mux.Handle("POST /api/v1/billing/checkout", s.requireAuth(s.handleCheckout))
