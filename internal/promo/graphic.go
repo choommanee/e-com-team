@@ -14,6 +14,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/image/font"
@@ -145,7 +146,24 @@ func (b *Builder) text(dst *image.RGBA, s string, x, y int, size float64, col co
 	}
 	defer face.Close()
 	d := &font.Drawer{Dst: dst, Src: &image.Uniform{col}, Face: face, Dot: fixed.P(x, y)}
-	d.DrawString(s)
+	d.DrawString(sanitize(s))
+}
+
+// sanitize keeps only glyphs the Thai font can render (ASCII + Thai block +
+// common spaces), dropping emoji/symbols that would show as missing-glyph boxes.
+func sanitize(s string) string {
+	out := make([]rune, 0, len(s))
+	for _, r := range s {
+		switch {
+		case r == ' ' || r == '\t':
+			out = append(out, ' ')
+		case r >= 0x20 && r <= 0x7E: // ASCII printable
+			out = append(out, r)
+		case r >= 0x0E00 && r <= 0x0E7F: // Thai
+			out = append(out, r)
+		}
+	}
+	return strings.TrimSpace(string(out))
 }
 
 func clip(s string, n int) string {

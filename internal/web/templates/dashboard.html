@@ -26,25 +26,6 @@
   </div>
 </div>
 
-<!-- Add product modal -->
-<div id="addOverlay" class="overlay hidden">
-  <div class="panel card">
-    <h2 class="panel-title pixel-font" style="font-size:12px">+ สร้าง LISTING ใหม่</h2>
-    <div class="field"><label>ชื่อสินค้า</label><input id="newProduct" placeholder="เช่น ครีมกันแดด"></div>
-    <div class="field">
-      <label>ภาษา</label>
-      <select id="newLang" class="search">
-        <option value="th">ไทย</option>
-        <option value="en">English</option>
-      </select>
-    </div>
-    <div class="err" id="addErr"></div>
-    <div style="display:flex; gap:10px; margin-top:6px">
-      <button class="btn primary" id="btnGenerate" style="flex:1">🚀 ให้ AI ทำงาน</button>
-      <button class="btn" id="btnCancelAdd" style="flex:1">ยกเลิก</button>
-    </div>
-  </div>
-</div>
 
 <!-- Header -->
 <header class="hub-header">
@@ -74,11 +55,44 @@
   <section class="area-listing">
     <div class="panel">
       <div class="listing-head">
-        <h3 class="panel-title" style="margin:0"><span class="ico">🛍</span> PRODUCT LISTING</h3>
-        <button class="btn" id="btnAdd">+ ADD PRODUCT</button>
+        <h3 class="panel-title" style="margin:0"><span class="ico">🔎</span> หาสินค้า SHOPEE เพื่อโปรโม</h3>
       </div>
-      <div class="product-grid" id="productGrid" style="margin-top:12px"></div>
-      <p class="muted center" id="emptyHint" style="margin-top:14px"></p>
+      <p class="muted" style="font-size:15px; margin:6px 0 10px">ค้นหาสินค้าจริงบน Shopee หรือวางลิงก์สินค้า → AI สร้างคอนเทนต์ + ลิงก์ affiliate ของคุณ (ได้ค่าคอมเมื่อมีคนซื้อจริง)</p>
+      <div style="display:flex; gap:8px; margin-bottom:8px">
+        <input class="search" id="prodSearch" placeholder="เช่น ครีมกันแดด, หูฟัง, กระเป๋า" style="flex:1">
+        <button class="btn primary" id="btnSearch">ค้นหา</button>
+      </div>
+      <div style="display:flex; gap:8px; margin-bottom:12px">
+        <input class="search" id="prodURL" placeholder="หรือวางลิงก์สินค้า Shopee ที่นี่" style="flex:1">
+        <button class="btn cyan" id="btnPromoteURL">สร้างโปรโม</button>
+      </div>
+      <div class="product-grid" id="productGrid"></div>
+      <p class="muted center" id="emptyHint" style="margin-top:14px">พิมพ์ชื่อสินค้าแล้วกดค้นหา เพื่อเริ่มหาสินค้าโปรโม</p>
+    </div>
+
+    <!-- Promo result -->
+    <div class="panel hidden" id="promoResult">
+      <h3 class="panel-title"><span class="ico">✨</span> คอนเทนต์โปรโมพร้อมโพสต์</h3>
+      <div class="dash-row">
+        <div>
+          <img id="promoGraphic" class="thumb" style="width:100%; max-width:320px; border-radius:8px" alt="">
+          <div style="margin-top:8px"><a id="promoGraphicDl" class="btn cyan" download>⬇ ดาวน์โหลดรูป</a></div>
+        </div>
+        <div>
+          <div class="field">
+            <label>ลิงก์ Affiliate ของคุณ</label>
+            <div style="display:flex; gap:8px">
+              <input id="promoLink" class="search" readonly><button class="btn cyan" id="btnCopyPromoLink">COPY</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>แคปชั่น (AI)</label>
+            <textarea id="promoCaption" class="search" rows="5" readonly style="resize:vertical"></textarea>
+          </div>
+          <div id="promoTags" class="muted" style="font-size:16px"></div>
+          <button class="btn primary" id="btnCopyCaption" style="margin-top:8px">📋 คัดลอกแคปชั่น</button>
+        </div>
+      </div>
     </div>
 
     <div class="panel">

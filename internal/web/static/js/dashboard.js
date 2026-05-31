@@ -66,7 +66,6 @@
     const d = await r.json();
     renderStats(d);
     renderOrders(d.order_summary);
-    renderProducts(d.listings || []);
     renderChart(d.sales_series || []);
     renderQuota(d);
     renderTeam(d.listings || []);
@@ -102,31 +101,66 @@
     if (d.quota) $("quotaUsage").textContent = `${d.quota.used} / ${d.quota.limit}`;
   }
 
-  function renderProducts(listings) {
+  // ---------- Shopee product search + promote ----------
+  let lastResults = [];
+  async function searchProducts() {
+    const q = $("prodSearch").value.trim();
+    if (!q) return;
+    $("emptyHint").textContent = "🔎 กำลังค้นหาสินค้าจริงบน Shopee...";
+    $("productGrid").innerHTML = "";
+    const r = await api("/api/v1/products/search?limit=6&q=" + encodeURIComponent(q));
+    const d = await r.json();
+    if (!r.ok) { $("emptyHint").textContent = d.error || "ค้นหาไม่สำเร็จ"; return; }
+    lastResults = d.products || [];
+    renderSearchResults(lastResults);
+  }
+  function renderSearchResults(products) {
     const grid = $("productGrid");
     grid.innerHTML = "";
-    if (!listings.length) {
-      $("emptyHint").textContent = 'ยังไม่มีสินค้า — กด "+ ADD PRODUCT" ให้ AI สร้าง listing แรกของคุณ!';
-      return;
-    }
+    if (!products.length) { $("emptyHint").textContent = "ไม่พบสินค้า ลองคำค้นอื่น"; return; }
     $("emptyHint").textContent = "";
-    listings.forEach((j) => {
-      const res = j.result || {};
-      const img = (res.image_url) || "";
-      const price = (j.id.charCodeAt(0) % 15 + 3) * 100 + 99; // deterministic display price
+    products.forEach((p, i) => {
       const card = document.createElement("div");
       card.className = "product-card";
-      const stClass = j.status === "done" ? "" : j.status;
       card.innerHTML = `
-        ${res.promotion ? `<span class="badge">PROMO</span>` : ""}
-        <span class="badge status ${stClass}">${j.status.toUpperCase()}</span>
-        <img class="thumb" src="${img}" alt="" onerror="this.style.opacity=.25">
-        <div class="pname" title="${escapeHtml(j.product_name)}">${escapeHtml(j.product_name)}</div>
-        <div class="price">฿${price.toLocaleString()}</div>
-        <div class="stock">${res.headline ? escapeHtml(truncate(res.headline, 22)) : "กำลังประมวลผล..."}</div>
+        <span class="badge">คอม ${Math.round((p.commission_rate || 0) * 100)}%</span>
+        <img class="thumb" src="${p.image_url}" alt="" onerror="this.style.opacity=.25">
+        <div class="pname" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</div>
+        <div class="price">฿${(p.price_min || 0).toLocaleString()}</div>
+        <div class="stock">⭐ ${p.rating_star || "-"} · ขาย ${(p.sales || 0).toLocaleString()}</div>
+        <button class="btn primary promote-btn" data-i="${i}" style="width:100%; margin-top:6px; font-size:8px">สร้างโปรโม</button>
       `;
       grid.appendChild(card);
     });
+    grid.querySelectorAll(".promote-btn").forEach((b) =>
+      b.onclick = () => promote(lastResults[+b.dataset.i]));
+  }
+  async function promote(product) {
+    showPromoLoading();
+    const body = product
+      ? { origin_url: product.offer_link, product_name: product.name, price_thb: product.price_min, image_url: product.image_url, sub_ids: ["dashboard"] }
+      : { origin_url: $("prodURL").value.trim(), sub_ids: ["dashboard"] };
+    if (!body.origin_url) { toast("ใส่ลิงก์สินค้า Shopee ก่อน", true); return; }
+    const r = await api("/api/v1/promote", { method: "POST", body: JSON.stringify(body) });
+    const d = await r.json();
+    if (!r.ok) { toast(d.error || "สร้างโปรโมไม่สำเร็จ", true); $("promoResult").classList.add("hidden"); return; }
+    showPromoResult(d);
+  }
+  function showPromoLoading() {
+    $("promoResult").classList.remove("hidden");
+    $("promoCaption").value = "✨ AI กำลังสร้างคอนเทนต์...";
+    $("promoLink").value = ""; $("promoTags").textContent = "";
+    $("promoResult").scrollIntoView({ behavior: "smooth" });
+  }
+  function showPromoResult(d) {
+    $("promoResult").classList.remove("hidden");
+    $("promoLink").value = d.short_link || "";
+    $("promoCaption").value = (d.promo && d.promo.caption) || "";
+    $("promoTags").textContent = (d.promo && d.promo.hashtags || []).join("  ");
+    const g = $("promoGraphic"), dl = $("promoGraphicDl");
+    if (d.graphic_url) { g.src = d.graphic_url; g.style.display = ""; dl.href = d.graphic_url; dl.style.display = ""; }
+    else { g.style.display = "none"; dl.style.display = "none"; }
+    toast("✅ พร้อมโพสต์แล้ว! คัดลอกลิงก์+แคปชั่นไปโพสต์ได้เลย");
   }
 
   function renderChart(series) {
@@ -235,23 +269,6 @@
     });
   }
 
-  // ---------- Create listing ----------
-  async function generate() {
-    const product_name = $("newProduct").value.trim();
-    const lang = $("newLang").value;
-    $("addErr").textContent = "";
-    if (!product_name) { $("addErr").textContent = "กรุณาใส่ชื่อสินค้า"; return; }
-    const r = await api("/api/v1/listings", { method: "POST", body: JSON.stringify({ product_name, lang }) });
-    const data = await r.json();
-    if (r.status === 402) { $("addErr").textContent = "โควต้าเดือนนี้เต็มแล้ว — อัปเกรดแพ็กเกจเพื่อสร้างเพิ่ม"; return; }
-    if (!r.ok) { $("addErr").textContent = data.error || "สร้างไม่สำเร็จ"; return; }
-    $("addOverlay").classList.add("hidden");
-    $("newProduct").value = "";
-    resetAgents();
-    toast("🚀 AI กำลังทำงาน...");
-    loadDashboard();
-  }
-
   // ---------- Upgrade ----------
   async function upgrade(plan) {
     const r = await api("/api/v1/billing/checkout", { method: "POST", body: JSON.stringify({ plan }) });
@@ -335,9 +352,11 @@
   $("btnLogin").onclick = () => authRequest("/api/v1/auth/login");
   $("btnRegister").onclick = () => authRequest("/api/v1/auth/register");
   $("btnLogout").onclick = logout;
-  $("btnAdd").onclick = () => $("addOverlay").classList.remove("hidden");
-  $("btnCancelAdd").onclick = () => $("addOverlay").classList.add("hidden");
-  $("btnGenerate").onclick = generate;
+  $("btnSearch").onclick = searchProducts;
+  $("prodSearch").addEventListener("keydown", (e) => { if (e.key === "Enter") searchProducts(); });
+  $("btnPromoteURL").onclick = () => promote(null);
+  $("btnCopyPromoLink").onclick = () => { navigator.clipboard.writeText($("promoLink").value); toast("📋 คัดลอกลิงก์แล้ว"); };
+  $("btnCopyCaption").onclick = () => { navigator.clipboard.writeText($("promoCaption").value); toast("📋 คัดลอกแคปชั่นแล้ว"); };
   document.querySelectorAll(".upgrade-btn").forEach((b) => b.onclick = () => upgrade(b.dataset.plan));
   $("btnAffApply").onclick = affApply;
   $("btnAffContent").onclick = affContent;
